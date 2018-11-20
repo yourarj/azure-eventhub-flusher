@@ -1,11 +1,11 @@
 app:
 
   event-hub:
-    connection-string: ${"EVCS"}
-    consumer-group: ${"CG"}
+    connection-string: ${EVCS}
+    consumer-group: ${CG}
     batch-size: 10000
     prefetch-count: 500
 
     storage:
-      connection-string: ${"SCS"}
-      container-name: ${"SCN"}
+      connection-string: ${SCS}
+      container-name: ${SCN}
