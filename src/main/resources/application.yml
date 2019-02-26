@@ -1,11 +1,16 @@
 app:
 
   event-hub:
+    partition-count: ${EVPC}
     connection-string: ${EVCS}
     consumer-group: ${CG}
-    batch-size: 10000
-    prefetch-count: 500
+    batch-size: 1000000
+    prefetch-count: 1500000
 
     storage:
       connection-string: ${SCS}
       container-name: ${SCN}
+
+spring:
+  banner:
+    location: classpath:/awesome.banner

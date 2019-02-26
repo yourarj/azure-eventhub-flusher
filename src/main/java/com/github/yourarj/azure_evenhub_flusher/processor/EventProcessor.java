@@ -8,10 +8,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StopWatch;
 
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 
 public class EventProcessor implements IEventProcessor {
     public static final Logger LOGGER = LoggerFactory.getLogger(EventProcessor.class);
-    private StopWatch stopWatch = new StopWatch();
+    private long startTimeMillis = System.currentTimeMillis();
+    private final int pauseInterval = 500;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     @Override
     public void onOpen(PartitionContext ctx) throws Exception {
@@ -19,39 +30,61 @@ public class EventProcessor implements IEventProcessor {
                 ctx.getOwner(),
                 ctx.getConsumerGroupName(),
                 ctx.getPartitionId());
-        stopWatch.start();
+        startTimeMillis= System.currentTimeMillis();
     }
 
     @Override
     public void onClose(PartitionContext ctx, CloseReason reason) throws Exception {
-        LOGGER.info("Event processor#: {} stopped processing messages from partitionID#: {}\n" +
+        LOGGER.info("Event processor#: {} stopped processing messages from partition ID: {}\n" +
                         "Reason: {}",
                 ctx.getOwner(),
                 ctx.getPartitionId(),
                 reason);
 
-        ctx.checkpoint();
-        stopWatch.stop();
+        this.checkpoint(ctx);
+        startTimeMillis= System.currentTimeMillis();
     }
 
     @Override
     public void onEvents(PartitionContext ctx, Iterable<EventData> events) throws Exception {
 
-        if(stopWatch.getTotalTimeSeconds()>30){
-            ctx.checkpoint();
-            stopWatch.stop();
-            stopWatch.start();
+        long eventCount = StreamSupport.stream(events.spliterator(), Boolean.TRUE).count();
+
+        executorService.submit(() -> {
+            LOGGER.info("Received EventData batch with {} events", eventCount);
+
+            Optional<EventData> max = StreamSupport.stream(events.spliterator(), Boolean.TRUE)
+                    .max(Comparator.comparing(eventData -> eventData.getSystemProperties().getOffset()));
+            max.ifPresent(
+                    eventData -> LOGGER.info("Offset: {} Sequence#: {}\n",
+                            eventData.getSystemProperties().getOffset(),
+                            eventData.getSystemProperties().getSequenceNumber())
+            );
+        });
+
+        if(System.currentTimeMillis()- startTimeMillis > pauseInterval){
+            this.checkpoint(ctx);
+            startTimeMillis=System.currentTimeMillis();
         }
     }
 
     @Override
     public void onError(PartitionContext ctx, Throwable error) {
-        LOGGER.error("Event processor#: {} of consumer group {} consuming partitionID#: {} encountered an Exception\n" +
+        LOGGER.error("Event processor#: {} of consumer group {} consuming partition ID: {} encountered an Exception\n" +
                         "Error Details: {}",
                 ctx.getOwner(),
                 ctx.getConsumerGroupName(),
                 ctx.getPartitionId(),
                 error.getMessage());
-        stopWatch.stop();
+        startTimeMillis=System.currentTimeMillis();
+    }
+
+    private void checkpoint(PartitionContext ctx){
+        LOGGER.info("###### Check pointing partition ID: {} - Event processor: {}", ctx.getPartitionId(), ctx.getOwner());
+        try {
+            ctx.checkpoint().get();
+        } catch (InterruptedException | ExecutionException e) {
+            LOGGER.error("Error while check pointing. {}", e.getMessage());
+        }
     }
 }
