@@ -9,8 +9,8 @@ app:
       prefetch-count: 1999
 
     storage:
-      connection-string: ${SCS}
-      container-name: ${SCN}
+      connection-string: ${EVSCS}
+      container-name: ${EVSCN}
 
     producer:
       fixed-rate: 1
