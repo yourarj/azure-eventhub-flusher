@@ -16,7 +16,7 @@ apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 
 group 'com.github.yourarj'
-version '1.0-SNAPSHOT'
+version '1.0-RELEASE'
 
 sourceCompatibility = 1.8
 
@@ -26,7 +26,7 @@ repositories {
 
 dependencies {
     implementation('org.springframework.boot:spring-boot-starter')
-    compile group: 'com.microsoft.azure', name: 'azure-eventhubs-eph', version: '2.0.1'
+    compile group: 'com.microsoft.azure', name: 'azure-eventhubs-eph', version: '2.5.0'
 
     testImplementation('org.springframework.boot:spring-boot-starter-test')
 }

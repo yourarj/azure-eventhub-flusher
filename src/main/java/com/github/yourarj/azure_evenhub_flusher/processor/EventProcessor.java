@@ -14,14 +14,17 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 
 public class EventProcessor implements IEventProcessor {
+    public static AtomicLong processedMessages = new AtomicLong(0);
     public static final Logger LOGGER = LoggerFactory.getLogger(EventProcessor.class);
+    private Long processed = 0L;
     private long startTimeMillis = System.currentTimeMillis();
-    private final int pauseInterval = 500;
+    private final int pauseInterval = 10000;
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     @Override
@@ -30,7 +33,7 @@ public class EventProcessor implements IEventProcessor {
                 ctx.getOwner(),
                 ctx.getConsumerGroupName(),
                 ctx.getPartitionId());
-        startTimeMillis= System.currentTimeMillis();
+        startTimeMillis = System.currentTimeMillis();
     }
 
     @Override
@@ -42,29 +45,39 @@ public class EventProcessor implements IEventProcessor {
                 reason);
 
         this.checkpoint(ctx);
-        startTimeMillis= System.currentTimeMillis();
+        startTimeMillis = System.currentTimeMillis();
     }
 
     @Override
     public void onEvents(PartitionContext ctx, Iterable<EventData> events) throws Exception {
 
         long eventCount = StreamSupport.stream(events.spliterator(), Boolean.TRUE).count();
+        processed += eventCount;
+
+        if (eventCount > 1000) {
+            processedMessages.addAndGet(eventCount);
+            processed = 0L;
+            LOGGER.info("Total processed messages: {}", processedMessages.get());
+        }
 
         executorService.submit(() -> {
-            LOGGER.info("Received EventData batch with {} events", eventCount);
 
-            Optional<EventData> max = StreamSupport.stream(events.spliterator(), Boolean.TRUE)
-                    .max(Comparator.comparing(eventData -> eventData.getSystemProperties().getOffset()));
-            max.ifPresent(
-                    eventData -> LOGGER.info("Offset: {} Sequence#: {}\n",
-                            eventData.getSystemProperties().getOffset(),
-                            eventData.getSystemProperties().getSequenceNumber())
-            );
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Received EventData batch with {} events", eventCount);
+
+                Optional<EventData> max = StreamSupport.stream(events.spliterator(), Boolean.TRUE)
+                        .max(Comparator.comparing(eventData -> eventData.getSystemProperties().getOffset()));
+                max.ifPresent(
+                        eventData -> LOGGER.debug("Offset: {} Sequence#: {}\n",
+                                eventData.getSystemProperties().getOffset(),
+                                eventData.getSystemProperties().getSequenceNumber())
+                );
+            }
         });
 
-        if(System.currentTimeMillis()- startTimeMillis > pauseInterval){
+        if (System.currentTimeMillis() - startTimeMillis > pauseInterval) {
             this.checkpoint(ctx);
-            startTimeMillis=System.currentTimeMillis();
+            startTimeMillis = System.currentTimeMillis();
         }
     }
 
@@ -76,10 +89,10 @@ public class EventProcessor implements IEventProcessor {
                 ctx.getConsumerGroupName(),
                 ctx.getPartitionId(),
                 error.getMessage());
-        startTimeMillis=System.currentTimeMillis();
+        startTimeMillis = System.currentTimeMillis();
     }
 
-    private void checkpoint(PartitionContext ctx){
+    private void checkpoint(PartitionContext ctx) {
         LOGGER.info("###### Check pointing partition ID: {} - Event processor: {}", ctx.getPartitionId(), ctx.getOwner());
         try {
             ctx.checkpoint().get();

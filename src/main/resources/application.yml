@@ -3,13 +3,17 @@ app:
   event-hub:
     partition-count: ${EVPC}
     connection-string: ${EVCS}
-    consumer-group: ${CG}
-    batch-size: 1000000
-    prefetch-count: 1500000
+    consumer:
+      consumer-group: ${CG}
+      batch-size: 1998
+      prefetch-count: 1999
 
     storage:
       connection-string: ${SCS}
       container-name: ${SCN}
+
+    producer:
+      fixed-rate: 1
 
 spring:
   banner:
