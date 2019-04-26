@@ -4,7 +4,7 @@ app:
     partition-count: ${EVPC}
     connection-string: ${EVCS}
     consumer:
-      consumer-group: ${CG}
+      consumer-group: ${EVCG}
       batch-size: 1998
       prefetch-count: 1999
 

@@ -28,5 +28,6 @@ public class EventHubProducer {
     public void sendMessage(){
         CompletableFuture<Void> send = eventHubClient.send(EventData.create(RandomStringUtils.random(100).getBytes()));
         send.thenRun(() ->{if(LOGGER.isDebugEnabled())LOGGER.debug("Message sent successfully");});
+        send.exceptionally(throwable -> {LOGGER.error(throwable.getMessage()); return null;});
     }
 }

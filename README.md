@@ -18,7 +18,7 @@ Technically, it does not remove any messages from Event Hub, just updates checkp
    - `app.event-hub.storage.container-name` - Event Hub Storage container name
      - alias `EVSCN`
    - `app.event-hub.consumer.consumer-group` - Event Hub queue consumer group name
-     - alias `CG`
+     - alias `EVCG`
    - `app.event-hub.consumer.batch-size` - Event Hub consumer batch size
      - `default - 1998`
    - `app.event-hub.consumer.prefetch-count` - Event Hub prefetch count
