@@ -6,29 +6,26 @@ import com.microsoft.azure.eventprocessorhost.IEventProcessor;
 import com.microsoft.azure.eventprocessorhost.PartitionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StopWatch;
 
 import java.util.Comparator;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 
 public class EventProcessor implements IEventProcessor {
-    public static AtomicLong processedMessages = new AtomicLong(0);
-    public static final Logger LOGGER = LoggerFactory.getLogger(EventProcessor.class);
+    private static final AtomicLong processedMessages = new AtomicLong(0);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EventProcessor.class);
     private Long processed = 0L;
     private long startTimeMillis = System.currentTimeMillis();
     private final int pauseInterval = 10000;
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     @Override
-    public void onOpen(PartitionContext ctx) throws Exception {
+    public void onOpen(PartitionContext ctx) {
         LOGGER.info("Event processor#: {} of consumer group {} initialized to receive message from partitionID#: {}",
                 ctx.getOwner(),
                 ctx.getConsumerGroupName(),
@@ -37,7 +34,7 @@ public class EventProcessor implements IEventProcessor {
     }
 
     @Override
-    public void onClose(PartitionContext ctx, CloseReason reason) throws Exception {
+    public void onClose(PartitionContext ctx, CloseReason reason) {
         LOGGER.info("Event processor#: {} stopped processing messages from partition ID: {}\n" +
                         "Reason: {}",
                 ctx.getOwner(),
@@ -49,7 +46,7 @@ public class EventProcessor implements IEventProcessor {
     }
 
     @Override
-    public void onEvents(PartitionContext ctx, Iterable<EventData> events) throws Exception {
+    public void onEvents(PartitionContext ctx, Iterable<EventData> events) {
 
         long eventCount = StreamSupport.stream(events.spliterator(), Boolean.TRUE).count();
         processed += eventCount;

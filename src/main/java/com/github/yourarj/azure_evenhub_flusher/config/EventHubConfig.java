@@ -27,12 +27,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Configuration
-public class EventHubConfig {
+class EventHubConfig {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(EventHubConfig.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EventHubConfig.class);
     private final ArrayList<String> activeProfiles;
 
-    public EventHubConfig(Environment environment) {
+    private EventHubConfig(Environment environment) {
         activeProfiles = new ArrayList<>(Arrays.asList(environment.getActiveProfiles()));
     }
 
@@ -59,7 +59,7 @@ public class EventHubConfig {
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public EventProcessorHost eventProcessorHost() {
+    private EventProcessorHost eventProcessorHost() {
         ConnectionStringBuilder builder = new ConnectionStringBuilder(connectionString);
         return new EventProcessorHost(
                 UUID.randomUUID().toString(),
@@ -73,9 +73,9 @@ public class EventHubConfig {
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public IEventProcessorFactory<EventProcessor> eventProcessor() {
+    private IEventProcessorFactory<EventProcessor> eventProcessor() {
 
-        IEventProcessorFactory<EventProcessor> factory = partitionContext -> {
+        return partitionContext -> {
             ReceiverRuntimeInformation runtimeInformation = partitionContext.getRuntimeInformation();
             LOGGER.debug("Creating event processor of Consumer Group: {}\n" +
                             "for partitionId: {}\n" +
@@ -92,7 +92,6 @@ public class EventHubConfig {
             );
             return new EventProcessor();
         };
-        return factory;
     }
 
     @Bean
@@ -104,7 +103,7 @@ public class EventHubConfig {
     }
 
     @PostConstruct
-    public void afterPropertiesSet() throws ExecutionException, InterruptedException {
+    public void afterPropertiesSet() {
 
         EventProcessorOptions options = new EventProcessorOptions();
         options.setMaxBatchSize(batchSize);

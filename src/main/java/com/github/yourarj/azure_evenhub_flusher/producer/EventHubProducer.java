@@ -15,12 +15,12 @@ import java.util.concurrent.CompletableFuture;
 @Component
 @EnableScheduling
 @Profile("producer")
-public class EventHubProducer {
+class EventHubProducer {
     String string  = "";
-    public static final Logger LOGGER = LoggerFactory.getLogger(EventHubProducer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EventHubProducer.class);
     private final EventHubClient eventHubClient;
 
-    public EventHubProducer(EventHubClient eventHubClient) {
+    private EventHubProducer(EventHubClient eventHubClient) {
         this.eventHubClient = eventHubClient;
     }
 
