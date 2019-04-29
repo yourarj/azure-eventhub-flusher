@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
 @EnableScheduling
 @Profile("producer")
 class EventHubProducer {
-    String string  = "";
+    String string = "";
     private static final Logger LOGGER = LoggerFactory.getLogger(EventHubProducer.class);
     private final EventHubClient eventHubClient;
 
@@ -26,7 +26,7 @@ class EventHubProducer {
 
     @Scheduled(fixedRateString = "${app.event-hub.producer.fixed-rate}")
     public void sendMessage(){
-        CompletableFuture<Void> send = eventHubClient.send(EventData.create(RandomStringUtils.random(100).getBytes()));
+        CompletableFuture<Void> send = eventHubClient.send(EventData.create(RandomStringUtils.random(1000).getBytes()));
         send.thenRun(() ->{if(LOGGER.isDebugEnabled())LOGGER.debug("Message sent successfully");});
         send.exceptionally(throwable -> {LOGGER.error(throwable.getMessage()); return null;});
     }

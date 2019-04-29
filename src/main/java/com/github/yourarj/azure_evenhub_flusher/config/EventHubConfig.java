@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -32,7 +31,7 @@ class EventHubConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(EventHubConfig.class);
     private final ArrayList<String> activeProfiles;
 
-    private EventHubConfig(Environment environment) {
+    public EventHubConfig(Environment environment) {
         activeProfiles = new ArrayList<>(Arrays.asList(environment.getActiveProfiles()));
     }
 
@@ -59,7 +58,7 @@ class EventHubConfig {
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    private EventProcessorHost eventProcessorHost() {
+    public EventProcessorHost eventProcessorHost() {
         ConnectionStringBuilder builder = new ConnectionStringBuilder(connectionString);
         return new EventProcessorHost(
                 UUID.randomUUID().toString(),
@@ -73,7 +72,7 @@ class EventHubConfig {
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    private IEventProcessorFactory<EventProcessor> eventProcessor() {
+    public IEventProcessorFactory<EventProcessor> eventProcessor() {
 
         return partitionContext -> {
             ReceiverRuntimeInformation runtimeInformation = partitionContext.getRuntimeInformation();
