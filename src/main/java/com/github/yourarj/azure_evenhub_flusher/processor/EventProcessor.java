@@ -1,9 +1,11 @@
 package com.github.yourarj.azure_evenhub_flusher.processor;
 
+import com.google.gson.JsonObject;
 import com.microsoft.azure.eventhubs.EventData;
 import com.microsoft.azure.eventprocessorhost.CloseReason;
 import com.microsoft.azure.eventprocessorhost.IEventProcessor;
 import com.microsoft.azure.eventprocessorhost.PartitionContext;
+import jdk.nashorn.internal.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,15 +23,16 @@ public class EventProcessor implements IEventProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(EventProcessor.class);
     private Long processed = 0L;
     private long startTimeMillis = System.currentTimeMillis();
-    private final int pauseInterval = 10000;
+    private final int pauseInterval = 1000;
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     @Override
     public void onOpen(PartitionContext ctx) {
-        LOGGER.info("Event processor#: {} of consumer group {} initialized to receive message from partitionID#: {}",
-                ctx.getOwner(),
-                ctx.getConsumerGroupName(),
-                ctx.getPartitionId());
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("Event processor#: {} of consumer group {} initialized to receive message from partitionID#: {}",
+                    ctx.getOwner(),
+                    ctx.getConsumerGroupName(),
+                    ctx.getPartitionId());
         startTimeMillis = System.currentTimeMillis();
     }
 
@@ -41,7 +44,8 @@ public class EventProcessor implements IEventProcessor {
                 ctx.getPartitionId(),
                 reason);
 
-        this.checkpoint(ctx);
+        if (!reason.equals(CloseReason.LeaseLost))
+            this.checkpoint(ctx);
         startTimeMillis = System.currentTimeMillis();
     }
 
@@ -49,17 +53,20 @@ public class EventProcessor implements IEventProcessor {
     public void onEvents(PartitionContext ctx, Iterable<EventData> events) {
 
         long eventCount = StreamSupport.stream(events.spliterator(), Boolean.TRUE).count();
+
+
+//        StreamSupport.stream(events.spliterator(), Boolean.TRUE).forEach(eventData -> LOGGER.info(new String(eventData.getBytes())));
         processed += eventCount;
 
-        if (eventCount > 1000) {
-            processedMessages.addAndGet(eventCount);
+        if (processed > 100) {
+            processedMessages.addAndGet(processed);
             processed = 0L;
             LOGGER.info("Total processed messages: {}", processedMessages.get());
         }
 
-        executorService.submit(() -> {
+        if (LOGGER.isDebugEnabled()) {
+            executorService.submit(() -> {
 
-            if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Received EventData batch with {} events", eventCount);
 
                 Optional<EventData> max = StreamSupport.stream(events.spliterator(), Boolean.TRUE)
@@ -69,8 +76,8 @@ public class EventProcessor implements IEventProcessor {
                                 eventData.getSystemProperties().getOffset(),
                                 eventData.getSystemProperties().getSequenceNumber())
                 );
-            }
-        });
+            });
+        }
 
         if (System.currentTimeMillis() - startTimeMillis > pauseInterval) {
             this.checkpoint(ctx);
@@ -90,7 +97,8 @@ public class EventProcessor implements IEventProcessor {
     }
 
     private void checkpoint(PartitionContext ctx) {
-        LOGGER.info("###### Check pointing partition ID: {} - Event processor: {}", ctx.getPartitionId(), ctx.getOwner());
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("###### Check pointing partition ID: {} - Event processor: {}", ctx.getPartitionId(), ctx.getOwner());
         try {
             ctx.checkpoint().get();
         } catch (InterruptedException | ExecutionException e) {

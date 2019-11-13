@@ -1,16 +1,16 @@
 app:
 
   event-hub:
-    partition-count: ${EVPC}
-    connection-string: ${EVCS}
+    partition-count: ${EVPC:0}
+    connection-string: ${EVCS};OperationTimeout=${EVOPTIMEOUT:PT2M}
     consumer:
       consumer-group: ${EVCG}
       batch-size: 1998
       prefetch-count: 1999
 
     storage:
-      connection-string: ${EVSCS}
-      container-name: ${EVSCN}
+      connection-string: ${EVSCS:}
+      container-name: ${EVSCN:}
 
     producer:
       fixed-rate: 1

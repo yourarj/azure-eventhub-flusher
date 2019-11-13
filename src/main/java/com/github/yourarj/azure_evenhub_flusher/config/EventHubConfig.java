@@ -3,9 +3,7 @@ package com.github.yourarj.azure_evenhub_flusher.config;
 
 import com.github.yourarj.azure_evenhub_flusher.processor.EventProcessor;
 import com.microsoft.azure.eventhubs.*;
-import com.microsoft.azure.eventprocessorhost.EventProcessorHost;
-import com.microsoft.azure.eventprocessorhost.EventProcessorOptions;
-import com.microsoft.azure.eventprocessorhost.IEventProcessorFactory;
+import com.microsoft.azure.eventprocessorhost.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.env.Environment;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -60,14 +59,24 @@ class EventHubConfig {
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public EventProcessorHost eventProcessorHost() {
         ConnectionStringBuilder builder = new ConnectionStringBuilder(connectionString);
-        return new EventProcessorHost(
-                UUID.randomUUID().toString(),
-                builder.getEventHubName(),
-                consumerGroup,
-                builder.toString(),
-                storageConnectionString,
-                storageContainerName
-        );
+        if (StringUtils.isEmpty(storageConnectionString) || StringUtils.isEmpty(storageContainerName)) {
+            return new EventProcessorHost(
+                    UUID.randomUUID().toString(),
+                    builder.getEventHubName(),
+                    consumerGroup,
+                    builder.toString(),
+                    new InMemoryCheckpointManager(),
+                    new InMemoryLeaseManager()
+            );
+        } else
+            return new EventProcessorHost(
+                    UUID.randomUUID().toString(),
+                    builder.getEventHubName(),
+                    consumerGroup,
+                    builder.toString(),
+                    storageConnectionString,
+                    storageContainerName
+            );
     }
 
     @Bean
@@ -94,6 +103,7 @@ class EventHubConfig {
     }
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     @Profile("producer")
     EventHubClient eventHubClient() throws EventHubException, IOException {
         ConnectionStringBuilder connStr = new ConnectionStringBuilder(connectionString);

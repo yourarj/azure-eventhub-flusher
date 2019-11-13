@@ -27,6 +27,7 @@ repositories {
 dependencies {
     implementation('org.springframework.boot:spring-boot-starter')
     compile group: 'com.microsoft.azure', name: 'azure-eventhubs-eph', version: '2.5.0'
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.8'
 
     testImplementation('org.springframework.boot:spring-boot-starter-test')
 }
